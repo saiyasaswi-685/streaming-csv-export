@@ -97,10 +97,4 @@ The services will be available at:
 
 ---
 
-### **Final Checklist before you Submit:**
-
-1. **`.env.example`** exists? ✅
-2. **`.gitignore`** (hiding node_modules) exists? ✅
-3. **`index.html`** is in the root folder? ✅
-4. **`app.ts`** is serving the static index file? ✅
 
