@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Export Live Dashboard</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 50px; text-align: center; background: #f0f2f5; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: inline-block; min-width: 450px; }
+        h1 { color: #1a73e8; }
+        .progress-bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 20px; margin: 25px 0; overflow: hidden; border: 1px solid #ccc; }
+        .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #4caf50, #81c784); transition: width 0.4s ease; }
+        .btn-group { margin-top: 20px; display: flex; gap: 15px; justify-content: center; }
+        button { padding: 12px 28px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        #export-btn { background: #1a73e8; color: white; }
+        #export-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        #cancel-btn { background: #d93025; color: white; display: none; }
+        #status-text { font-size: 18px; font-weight: 600; margin-top: 20px; color: #3c4043; }
+        #download-link { margin-top: 30px; display: none; color: #188038; font-weight: bold; font-size: 20px; text-decoration: none; border: 2px solid #188038; padding: 10px 20px; border-radius: 8px; }
+        .error { color: #d93025 !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📊 Live CSV Export</h1>
+        <p>Streaming 100,000 user records from PostgreSQL</p>
+
+        <div class="btn-group">
+            <button id="export-btn" onclick="startExport()">Start Export</button>
+            <button id="cancel-btn" onclick="cancelExport()">Cancel Export</button>
+        </div>
+        
+        <div id="status-area" style="display:none;">
+            <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+            <p id="status-text">Initializing...</p>
+            <p id="eta-text" style="color:#70757a; font-size:14px;"></p>
+        </div>
+        
+        <a id="download-link" href="#" download>📥 Download Generated CSV</a>
+    </div>
+
+    <script>
+        let socket = null;
+
+        function startExport() {
+            // UI Resetting for new export
+            document.getElementById('export-btn').disabled = true;
+            document.getElementById('cancel-btn').style.display = 'inline-block';
+            document.getElementById('status-area').style.display = 'block';
+            document.getElementById('download-link').style.display = 'none';
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('status-text').innerText = "Connecting...";
+            document.getElementById('status-text').classList.remove('error');
+
+            fetch('http://localhost:8080/api/exports', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    initWebSocket(data.exportId);
+                })
+                .catch(err => showError("API Connection Failed"));
+        }
+
+        function cancelExport() {
+            if (socket) socket.emit('action', { action: 'cancel' });
+        }
+
+        function initWebSocket(exportId) {
+            if (socket) socket.disconnect(); // Patha connection unte close chestundi
+            
+            socket = io('http://localhost:8080', { query: { exportId } });
+
+            socket.on('progress', (msg) => {
+                if (msg.status === 'processing') {
+                    const p = msg.progress;
+                    document.getElementById('progress-fill').style.width = p.percentage + '%';
+                    document.getElementById('status-text').innerText = `🔄 Processing: ${p.processed.toLocaleString()} rows`;
+                    document.getElementById('eta-text').innerText = `ETA: ${p.etaSeconds}s`;
+                }
+
+                if (msg.status === 'cancelled') {
+                    document.getElementById('status-text').innerText = "🛑 Export Cancelled";
+                    document.getElementById('status-text').classList.add('error');
+                    finishUI();
+                }
+
+                if (msg.status === 'completed') {
+                    document.getElementById('status-text').innerText = "✅ Export Finished!";
+                    document.getElementById('progress-fill').style.width = '100%';
+                    const link = document.getElementById('download-link');
+                    link.style.display = 'block';
+                    link.href = `http://localhost:8080${msg.downloadUrl}`;
+                    finishUI();
+                }
+
+                if (msg.status === 'failed') {
+                    showError(`❌ Failed: ${msg.error}`);
+                    finishUI();
+                }
+            });
+        }
+
+        function showError(m) {
+            document.getElementById('status-text').innerText = m;
+            document.getElementById('status-text').classList.add('error');
+        }
+
+        function finishUI() {
+            document.getElementById('export-btn').disabled = false;
+            document.getElementById('cancel-btn').style.display = 'none';
+            document.getElementById('eta-text').innerText = "";
+        }
+    </script>
+</body>
+</html>

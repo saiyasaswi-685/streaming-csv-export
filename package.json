@@ -1,0 +1,36 @@
+{
+  "name": "streaming-csv-export",
+  "version": "1.0.0",
+  "description": "Real-time CSV export with WebSockets and Redis",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.18.2",
+    "pg": "^8.20.0",
+    "pg-cursor": "^2.19.0",
+    "redis": "^4.6.10",
+    "socket.io": "^4.8.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.11.0",
+    "@types/pg-cursor": "^2.7.2",
+    "@types/redis": "^4.0.11",
+    "@types/uuid": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
