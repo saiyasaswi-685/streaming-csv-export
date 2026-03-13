@@ -39,7 +39,7 @@ Ensure you have the following installed:
 Clone the repository and navigate to the project root:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/saiyasaswi-685/streaming-csv-export
 cd streaming-csv-export
 
 ```
